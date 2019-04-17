@@ -86,8 +86,9 @@ def registernewR(request):
     p_no = body["phone"]
     name = body["name"]
     z = body["zip_code"]
-    print(request, e, p, a, p_no, name)
-    sucess = registerRes(e, p, a, name, p_no, z)
+    c = body["city"]
+    print(request, e, p, a, p_no, name, c)
+    sucess = registerRes(e, p, a, name, p_no, z, c)
     return JsonResponse(sucess, safe=False)
 @csrf_exempt 
 def registernewN(request):
