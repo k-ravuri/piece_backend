@@ -182,7 +182,7 @@ def registerRes(email, password, address, name, phoneNumber, zip_code):
 
 def register_dish(restuarant_email,restuarant_name,name,price,listTime):
     cursor = connection.cursor()
-    cursor.execute('INSERT INTO dishes ("restuarant_email", "restuarant_name", "name", "price", "listTime") VALUES(%s, %s, %s, %s, %s) ', [restuarant_email, restuarant_name, name, price, listTime])
+    cursor.execute('INSERT INTO dishes ("restaurant_email", "restaurant_name", "name", "price", "listing_time") VALUES(%s, %s, %s, %s, %s) ', [restuarant_email, restuarant_name, name, price, listTime])
     # row = cursor.fetchall()
     # pprint.pprint(row)
     return [restuarant_email, restuarant_name, name, price, listTime]

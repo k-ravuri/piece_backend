@@ -56,14 +56,14 @@ def forgotpassN(request):
 def unsubscribeN(request):
     e = request.GET.get('email', '')
     print(request, e)
-    sucess = unsubRes(e)
+    sucess = unsubNon(e)
     print(sucess)
     return JsonResponse(sucess, safe=False)
 
 def unsubscribeR(request):
     e = request.GET.get('email', '')
     print(request, e)
-    sucess = unsubNon(e)
+    sucess = unsubRes(e)
     print(sucess)
     return JsonResponse(sucess, safe=False)
 
