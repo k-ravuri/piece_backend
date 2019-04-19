@@ -23,9 +23,9 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = '10(1^782r!j$(rrf!fi)%ji=y2dh1ygy=p!x=2ynfd7_tqq_6h'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
-ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = []
 
 
 # Application definition
@@ -38,8 +38,12 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'restaurants',
+    'nonprofits',
+    'dishes',
+    'requests',
     'rest_framework',
-    'corsheaders'
+    'corsheaders',
+    'schedules'
 ]
 CORS_ORIGIN_ALLOW_ALL = True   
 
@@ -83,12 +87,13 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
         'NAME': 'piece_db',
-        'USER': 'master',
+        'USER': 'Kavi',
         'PASSWORD': 'master',
         'HOST': 'localhost',
         'PORT': '5432',
 }
 }
+
 
 
 # Password validation

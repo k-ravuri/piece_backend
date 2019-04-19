@@ -1,167 +1,167 @@
 from django.shortcuts import render
 from restaurants.models import Restaurant
 from restaurants.serializers import RestaurantSerializer
+from restaurants.yelp_webcrawler import restaurant_info_scraper, multithread_functions
 from rest_framework import generics
-from rest_framework.decorators import detail_route, list_route
+from rest_framework.decorators import detail_route, list_route, api_view
 from rest_framework.response import Response
 from rest_framework import viewsets, status
 from django.http import JsonResponse
+from django.db import connection
 from django.views.decorators.csrf import csrf_exempt
+import psycopg2
+import pprint
 import json
 import datetime
-class RestaurantListCreate(generics.ListCreateAPIView):
-    queryset = Restaurant.objects.all()
-    serializer_class = RestaurantSerializer
-
 from django.http import Http404
 from django.shortcuts import render
-from  .models import my_custom_sql, forgot_passNon, forgot_passRes,unsubNon,unsubRes, registerNon, registerRes, loginRes, loginNon, mysearch, get_dishes, get_nonp, get_res, register_dish
-
-def index(request):
-    all_restaurants = my_custom_sql()
-    # return render(request, 'index.html',{ 'all_restaurants' :all_restaurants})
-    return JsonResponse(all_restaurants, safe=False)
-
-def loginR(request):
-    print(request)
-    e = request.GET.get('email', '')
-    p = request.GET.get('password', '')
-    sucess = loginRes(e, p)
-    return JsonResponse(sucess, safe=False)
-    # return render(request, 'login.html',{ 'email' :e, 'password':p})
-def loginN(request):
-    print(request)
-    e = request.GET.get('email', '')
-    p = request.GET.get('password', '')
-    sucess = loginNon(e, p)
-    return JsonResponse(sucess, safe=False)
-    # return render(request, 'login.html',{ 'email' :e, 'password':p})
-
-def forgotpassR(request):
-    e = request.GET.get('email', '')
-    p = request.GET.get('newpass', '')
-    print(request, e, p)
-    sucess = forgot_passRes(e, p)
-    print(sucess)
-    return JsonResponse(sucess, safe=False)
-
-def forgotpassN(request):
-    e = request.GET.get('email', '')
-    p = request.GET.get('newpass', '')
-    print(request, e, p)
-    sucess = forgot_passNon(e, p)
-    print(sucess)
-    return JsonResponse(sucess, safe=False)
-
-def unsubscribeN(request):
-    e = request.GET.get('email', '')
-    print(request, e)
-    sucess = unsubNon(e)
-    print(sucess)
-    return JsonResponse(sucess, safe=False)
-
-def unsubscribeR(request):
-    e = request.GET.get('email', '')
-    print(request, e)
-    sucess = unsubRes(e)
-    print(sucess)
-    return JsonResponse(sucess, safe=False)
-
-def unsubscribe_dish(request):
-    n = request.GET.get('name', '')
-    e = request.GET.get('restuarant_email', '')
-    print(request, e)
-    sucess = delete_dish(n, e)
-    print(sucess)
-    return JsonResponse(sucess, safe=False)
 
 @csrf_exempt 
-def registernewR(request):
-    body_unicode = request.body.decode('utf-8')
-    body = json.loads(body_unicode)
-    print(body)
-    e = body["email"]
-    p = body["password"]
-    a = body["address"]
-    p_no = body["phone"]
-    name = body["name"]
-    z = body["zip_code"]
-    c = body["city"]
-    print(request, e, p, a, p_no, name, c)
-    sucess = registerRes(e, p, a, name, p_no, z, c)
-    return JsonResponse(sucess, safe=False)
-@csrf_exempt 
-def registernewN(request):
-    body_unicode = request.body.decode('utf-8')
-    body = json.loads(body_unicode)
-    print(body)
-    e = body["email"]
-    p = body["password"]
-    a = body["address"]
-    p_no = body["phone"]
-    name = body["name"]
-    z = body["zip_code"]
-    print(request, e, p, a, p_no, name)
-    sucess = registerNon(e, p, a, name, p_no, z)
-    return JsonResponse(sucess, safe=False)
+@api_view(['GET', 'POST', 'DELETE']) 
+def restaurants(request, format=None):
+    if request.method == 'POST': #register restaurant
+        body_unicode = request.body.decode('utf-8')
+        body = json.loads(body_unicode)
 
-@csrf_exempt 
-def registernew_dish(request):
+        cursor = connection.cursor()
+        cursor.execute('INSERT INTO restaurants_restaurant ("email", "password", "name", "address", "phone_number", "zip_code", "rating", "city", "state") VALUES( %s, %s, %s, %s, %s, %s, %s, %s, %s)' , [ body["email"],  body["password"], body["name"], body["address"], body["phone"], body["zip_code"], 0, body["city"], body["state"] ])
+        
+        return JsonResponse({
+            'message': "SUCCESS",
+        })
+    elif request.method == 'DELETE': #unregister restaurant
+        email = request.GET.get('email', '')
+        cursor = connection.cursor()
+        cursor.execute("DELETE FROM restaurants_restaurant WHERE email = %s", [email])
+
+        return JsonResponse({
+            'message': "SUCCESS"
+        })
+    else:
+        email = request.GET.get('email', '') 
+        password = request.GET.get('password', '')
+        cursor = connection.cursor()
+        cursor.execute('SELECT * FROM restaurants_restaurant WHERE email = %s AND password = %s', [email, password] )
+        restaurant = cursor.fetchall()
+
+        if len(restaurant) == 0:
+            return JsonResponse({
+                'message': "NOT FOUND",
+                'result': None
+            })
+        else:
+            return JsonResponse({
+                'message': "SUCCESS",
+                'result': restaurant
+            })
+
+# @csrf_exempt 
+# @api_view(['PUT']) #edit restaurant data
+# def restaurants(request, format=None):
+#     body_unicode = request.body.decode('utf-8')
+#     body = json.loads(body_unicode)
+
+#     cursor = connection.cursor()
+#     cursor.execute('UPDATE restaurants SET email = %s, password = %s, name = %s, address = %s, phone_number = %s, zip_code = %s, rating = %s, city = %s, state = %s WHERE email = %s', [body["email"], body["password"], body["name"], body["address"], body["phone"], body["zip_code"], str(0), body["city"], body["state"], body["email"]])
+    
+#     return JsonResponse({
+#         'message': "SUCCESS"
+#     })
+
+@api_view(['PUT']) #replace password
+def change_password(request):
     body_unicode = request.body.decode('utf-8')
     body = json.loads(body_unicode)
-    print(body)
-    e = body["restuarant_email"]
-    en = body["restuarant_name"]
-    n = body["name"]
-    p = body["price"]
-    lt = datetime.datetime.now().strftime('%H:%M:%S');
-    print(lt)
-    print(e, en, n, p, lt)
-    sucess = register_dish(e, en, n, p, lt)
-    return JsonResponse(sucess, safe=False)
+    email = body["email"]
+    new_password = body["newPassword"]
+    cursor = connection.cursor()
+    cursor.execute("UPDATE restaurants_restaurant SET password = %s WHERE email = %s", [new_password, email])
 
-def showSearch(request):
+    return JsonResponse({
+        'message': "SUCCESS"
+    })
+
+@api_view(['GET']) #getting restaurant data by email
+def get_data_by_email(request): 
+    email = request.GET.get('email', '')
+    print(email)
+    cursor = connection.cursor()
+    cursor.execute("SELECT name, phone_number, address, city, state, zip_code  FROM restaurants_restaurant WHERE email = %s", [email])
+    restaurant_data = cursor.fetchall()
+
+    if len(restaurant_data) == 0:
+        return JsonResponse({
+            'message': "NOT FOUND",
+            'data': None
+        })
+    else:
+        return JsonResponse({
+            'message': "SUCCESS",
+            'data': restaurant_data
+        })
+    return JsonResponse(success, safe=False)
+
+@api_view(['GET']) #getting restaurants data by name
+def get_data_by_name(request): 
     name = request.GET.get('name', '')
-    print(request)
-    found = mysearch(name)
-    return render(request, 'search.html',{ 'name' :name})
 
-def find_res(request):
-    print(request)
-    e = request.GET.get('email', '')
-    sucess = get_res(e)
-    return JsonResponse(sucess, safe=False)
+    cursor = connection.cursor()
+    cursor.execute("SELECT name, phone_number, address, city, state, zip_code  FROM restaurants_restaurant WHERE name = %s", [name])
+    restaurant_data = cursor.fetchall()
 
-def find_nonP(request):
-    print(request)
-    e = request.GET.get('email', '')
-    sucess = get_nonp(e)
-    return JsonResponse(sucess, safe=False)
+    if len(restaurant_data) == 0:
+        return JsonResponse({
+            'message': "NOT FOUND",
+            'data': None
+        })
+    else:
+        return JsonResponse({
+            'message': "SUCCESS",
+            'data': restaurant_data
+        })
+    return JsonResponse(success, safe=False)
 
-def find_dishes(request):
-    print(request)
-    e = request.GET.get('restuarant_email', '')
-    n = request.GET.get('restuarant_name', '')
-    sucess = get_dishes(e, n)
-    return JsonResponse(sucess, safe=False)
+@api_view(['GET']) #getting restaurants data by name
+def get_near_me(request): 
+    name = request.GET.get('zipcode', '')
 
-def get_price(request):
-    print(request)
-    e = request.GET.get('time', '')
-    p = request.GET.get('price', '')
-    price = float('0' + p)
-    print(e.split(':'))
-    split = e.split(':')
-    hour = int('0' + datetime.datetime.now().strftime('%H')) * 60  #  Time like '23:12:05'
-    minute = int('0' + datetime.datetime.now().strftime('%M'))  #  Time like '23:12:05'
-    total_min = hour + minute
-    given_hour = int('0' + split[0]) * 60
-    print(split[0])
-    given_min = int('0' + split[1])
-    print(split[1])
-    decrement = ((total_min - (given_hour+given_min))/60) * (price*.05)
+    cursor = connection.cursor()
+    cursor.execute("SELECT name, phone_number, address, city, state, zip_code  FROM restaurants WHERE zipcode = %s", [zipcode])
+    restaurant_data = cursor.fetchall()
 
-    print(decrement)
+    if len(restaurant_data) == 0:
+        return JsonResponse({
+            'message': "NOT FOUND",
+            'data': None
+        })
+    else:
+        return JsonResponse({
+            'message': "SUCCESS",
+            'data': restaurant_data
+        })
+    return JsonResponse(success, safe=False)
 
-    # print(now-e)
-    return JsonResponse(str(price+decrement), safe=False)
+@api_view(['GET']) #getting restaurants data by name
+def get_restaurant_info(request): 
+    restaurant_name = request.GET.get('restaurant_name', '')
+    city = request.GET.get('city', '')
+    state = request.GET.get('state', '')
+
+    # cursor = connection.cursor()
+    # cursor.execute("SELECT name, phone_number, address, city, state, zip_code  FROM restaurants WHERE name = %s", [name])
+    # restaurant_data = cursor.fetchall()
+    success = multithread_functions(restaurant_name, city, state)
+    # print(success)
+    # time = get_times(returant_name, city);
+
+    if len(success) == 0:
+        return JsonResponse({
+            'message': "NOT FOUND",
+            'data': None
+        })
+    else:
+        return JsonResponse({
+            'message': "SUCCESS",
+            'data': success
+        })
+    return JsonResponse(success, safe=False)
